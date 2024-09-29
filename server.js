@@ -1,32 +1,35 @@
-// server.js (for evan.ltd)
+// server.js
 
-// Import required modules
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 
 const app = express();
 app.use(cookieParser());
 
-// Simple verification route for evan.ltd
+// Serve static files (like HTML, CSS) from the "public" directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Route to handle the verification
 app.get('/', (req, res) => {
     const verifyCookie = req.cookies.verify_cookie;
 
+    // Check if the verify_cookie is set
     if (!verifyCookie) {
-        // If the verify_cookie is not found, redirect back to auth.evan.ltd
         return res.redirect('https://auth.evan.ltd');
     }
 
-    // Here you could have a more advanced verification mechanism for the token
+    // Basic validation of the cookie (it should be exactly 50 characters long)
     if (verifyCookie.length !== 50) {
-        // If the cookie is invalid, redirect back to the verification page
         return res.redirect('https://auth.evan.ltd');
     }
 
-    // If the cookie is valid, proceed to the main page
-    res.send('<h1>Welcome to Evan Ltd!</h1>');
+    // If cookie is valid, send the main content
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server
-app.listen(3000, () => {
-    console.log('Server running on port 3000');
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
