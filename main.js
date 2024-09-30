@@ -10,14 +10,10 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-try {
-    firebase.initializeApp(firebaseConfig);
-    console.log("Firebase initialized successfully.");
-} catch (error) {
-    console.error("Firebase initialization failed:", error);
-}
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore(); // Initialize Firestore
 
-// Function to get a cookie by name
+// Function to get the value of a cookie by name
 function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -25,41 +21,47 @@ function getCookie(name) {
     return null;
 }
 
-// Function to validate the token in Firestore
+// Function to check if a token exists in Firestore
 async function validateToken(token) {
-    const db = firebase.firestore();
     try {
         const doc = await db.collection('verify_tokens').doc(token).get();
-        const exists = doc.exists;
-        console.log(`Token validation for ${token}: ${exists}`);
-        return exists;  // Returns true if the token exists in Firestore
+        if (doc.exists) {
+            console.log('Token is valid in Firestore.');
+            return true;
+        } else {
+            console.log('Token not found in Firestore.');
+            return false;
+        }
     } catch (error) {
-        console.error("Error checking token in Firestore:", error);
-        return false;  // Return false if there's an error
+        console.error('Error checking token in Firestore:', error);
+        return false;
     }
 }
 
-// Main function for token verification
-async function handleTokenVerification() {
-    console.log("Starting token verification process...");
+// Main function to validate token and redirect if necessary
+async function handleVerification() {
+    console.log("Starting verification process...");
 
-    const tokenFromCookie = getCookie('verify_token'); // Ensure consistency
-    console.log(`Checking token from cookie: ${tokenFromCookie}`);
+    // Check for the token in cookies
+    const token = getCookie('verify_token');
+    if (!token) {
+        console.log('No token found in cookies. Redirecting to auth.evan.ltd...');
+        window.location.href = 'https://auth.evan.ltd';  // Redirect to auth.evan.ltd
+        return;
+    }
 
-    if (tokenFromCookie) {
-        const isValid = await validateToken(tokenFromCookie);
-        if (isValid) {
-            console.log('Valid token found, user is authenticated.');
-            // User is authenticated, do nothing or display user content
-        } else {
-            console.log('Invalid token found. Redirecting to auth.evan.ltd...');
-            window.location.href = 'https://auth.evan.ltd';  // Redirect back to auth.evan.ltd
-        }
+    console.log(`Token found: ${token}`);
+
+    // Validate the token in Firestore
+    const isValid = await validateToken(token);
+    if (isValid) {
+        console.log('Token is valid. Proceeding...');
+        // Do nothing and proceed to the site
     } else {
-        console.log('No token found in cookie. Redirecting to auth.evan.ltd...');
+        console.log('Token is invalid. Redirecting to auth.evan.ltd...');
         window.location.href = 'https://auth.evan.ltd';  // Redirect to auth.evan.ltd
     }
 }
 
-// Trigger token verification on page load
-window.onload = handleTokenVerification;
+// Trigger the verification process when the page loads
+window.onload = handleVerification;
